@@ -10,6 +10,8 @@ langchain-community = "*"
 langchainhub = "*"
 python-dotenv = "*"
 black = "*"
+langchain-udemy = {file = ".", editable = true}
+langchain-tavily = "*"
 
 [dev-packages]
 

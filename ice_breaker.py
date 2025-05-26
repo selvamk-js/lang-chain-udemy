@@ -2,10 +2,15 @@
 This module provides functionality for an ice breaker application using LangChain.
 It handles environment variables and API key configuration.
 """
-import os
+# import os
 from langchain.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from dotenv import load_dotenv
+# from langchain.schema import StrOutputParser
+from agents.linkedin_lookup_agent import lookup
+from third_parties.linkedin import scrape_linkedin_profile
+from output_parser import summary_parser
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -20,20 +25,33 @@ In 2002, Musk founded the space technology company SpaceX, becoming its CEO and 
 Musk's political activities and views have made him a polarizing figure. He has been criticized for making unscientific and misleading statements, including COVID-19 misinformation and promoting conspiracy theories, and affirming antisemitic, racist, and transphobic comments. His acquisition of Twitter was controversial due to a subsequent increase in hate speech and the spread of misinformation on the service. Especially since the 2024 U.S. presidential election, Musk has been heavily involved in politics as a vocal supporter of Trump. Musk was the largest donor in the 2024 U.S. presidential election and is a supporter of global far-right figures, causes, and political parties. His role in the second Trump administration, particularly in regards to DOGE, has attracted public backlash.
 # """
 
-if __name__ == "__main__":
-    print("Hello LangChain")
-    print(os.getenv("LANGCHAIN_TRACING_V2"))
+
+def ice_break_with_linkedin(name: str) -> str:
+    # linkedin_url = lookup(name)
+    linkedin_url = "https://gist.githubusercontent.com/emarco177/859ec7d786b45d8e3e3f688c6c9139d8/raw/32f3c85b9513994c572613f2c8b376b633bfc43f/eden-marco-scrapin.json"
+    linkedin_data = scrape_linkedin_profile(
+        linkedin_profile_url=linkedin_url, mock=True)
     SUMMARY_TEMPLATE = """
-    given the following information {information} about a person from I want you to create:
+    given the Linkedin information {information} about a person from I want you to create:
     - a short summary
     - two interesting facts about them
     - what to call them
     - a short fun fact about them
+    \n{format_instructions}
     """
     summary_propmpt_template = PromptTemplate(
-        input_variables=["information"], template=SUMMARY_TEMPLATE)
+        input_variables=["information"], template=SUMMARY_TEMPLATE,
+        partial_variables={"format_instructions": summary_parser.get_format_instructions()})
 
-    llm = ChatOllama(model="llama3.2:3b", temperature=0)
-    chain = summary_propmpt_template | llm
-    res = chain.invoke({"information": INFORMATION})
-    print(res.content)
+    llm = ChatOllama(model="gemma3:4b", temperature=0)
+
+    chain = summary_propmpt_template | llm | summary_parser
+
+    res = chain.invoke({"information": linkedin_data})
+    return res
+
+
+if __name__ == "__main__":
+    print("Hello LangChain")
+    res = ice_break_with_linkedin("Nandhini Anandhan")
+    print(res)
